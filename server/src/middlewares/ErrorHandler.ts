@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
-import { ValidationError } from "../utils/appErrors"
+import { ValidationError } from "../utils/appErrors.js"
 import mongoose from "mongoose";
 
 export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {

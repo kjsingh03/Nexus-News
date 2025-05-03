@@ -1,4 +1,4 @@
-import { News } from "./news.model";
+import { News } from "./news.model.js";
 
 export {
     News,

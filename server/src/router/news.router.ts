@@ -1,6 +1,6 @@
 import Express from "express";
-import { createNews } from "../controller/news.controller";
-import { upload } from "../middlewares/upload";
+import { createNews } from "../controller/news.controller.js";
+import { upload } from "../middlewares/upload.js";
 
 const newsRouter = Express();
 

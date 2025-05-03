@@ -1,8 +1,8 @@
 import Express from "express";
 import cors from "cors"
-import newsRouter from "./router/news.router";
+import newsRouter from "./router/news.router.js";
 import mongoose from "mongoose";
-import { errorHandler } from "./middlewares/ErrorHandler";
+import { errorHandler } from "./middlewares/ErrorHandler.js";
 
 const PORT = process.env.PORT
 
