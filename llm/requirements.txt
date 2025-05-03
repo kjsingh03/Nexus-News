@@ -1,2 +1,4 @@
-flask
-requests
+Flask==3.1.0
+requests==2.32.3
+pathway
+litellm==1.67.6

@@ -244,7 +244,6 @@ def get_news_insights():
                 thumbnail_filename = thumbnail_file.filename
                 created_files.append(save_uploaded_file(thumbnail_file))
         
-        # Process additional files
         files = []
         if 'files' in request.files:
             file_list = request.files.getlist('files')
@@ -253,10 +252,8 @@ def get_news_insights():
                     files.append(file.filename)
                     created_files.append(save_uploaded_file(file))
         
-        # Get insights, categorization, and credibility from Gemini
         insights, categorization, credibility = query_gemini(title, description, thumbnail_filename, files)
         
-        # Prepare response
         response_data = {
             'status': 'success',
             'insights': insights,
@@ -280,7 +277,6 @@ def get_news_insights():
         )
         
     finally:
-        # Clean up temporary files
         for file_path in created_files:
             try:
                 if file_path and os.path.isfile(file_path):
