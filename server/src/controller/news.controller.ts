@@ -57,7 +57,7 @@ export const createNews = catchAsync(async (req: Request, res: Response) => {
 
     // LLM handling
 
-
+    
 
     // Aptos Handling
 
