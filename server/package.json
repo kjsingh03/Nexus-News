@@ -19,6 +19,7 @@
     "@types/node": "^22.15.3"
   },
   "dependencies": {
+    "@aptos-labs/ts-sdk": "^1.38.0",
     "@types/mongoose": "^5.11.97",
     "cors": "^2.8.5",
     "express": "^5.1.0",
