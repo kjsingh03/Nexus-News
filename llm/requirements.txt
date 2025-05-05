@@ -1,3 +1,10 @@
+<<<<<<< HEAD
 flask
 requests
 python-dotenv
+=======
+Flask==3.1.0
+requests==2.32.3
+pathway
+litellm==1.67.6
+>>>>>>> 72a70b2f32133caa809cc1e7d5ba9a1426b7d4f9

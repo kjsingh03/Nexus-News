@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
 # Directory to store temporary uploaded files
 UPLOAD_DIR = "uploads"
@@ -26,42 +26,44 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Current date for comparison
 CURRENT_DATE = datetime.now()
 
+
 def save_uploaded_file(file):
     """Save an uploaded file and return its path"""
     if not file or not file.filename:
         return None
-    
+
     file_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4()}_{file.filename}")
     file.save(file_path)
-    logger.debug(f"Saved file: {file_path}")
     return file_path
+
 
 def extract_date(text, patterns=None):
     """Extract date from text using multiple patterns"""
     if not text:
         return None
-        
+
     patterns = patterns or [
-        r'\d{1,2} [a-zA-Z]+ \d{4}',  # 25 December 2024
-        r'[A-Za-z]+ \d{1,2}, \d{4}',  # December 25, 2024
-        r'\d{4}-\d{2}-\d{2}'          # 2024-12-25
+        r"\d{1,2} [a-zA-Z]+ \d{4}",  # 25 December 2024
+        r"[A-Za-z]+ \d{1,2}, \d{4}",  # December 25, 2024
+        r"\d{4}-\d{2}-\d{2}",  # 2024-12-25
     ]
-    
+
     for pattern in patterns:
         match = re.search(pattern, text)
         if match:
             date_str = match.group()
             try:
                 # Try different date formats
-                for fmt in ['%d %B %Y', '%b %d, %Y', '%Y-%m-%d']:
+                for fmt in ["%d %B %Y", "%b %d, %Y", "%Y-%m-%d"]:
                     try:
                         return datetime.strptime(date_str, fmt)
                     except ValueError:
                         continue
             except Exception as e:
                 logger.warning(f"Could not parse date '{date_str}': {e}")
-    
+
     return None
+
 
 def query_gemini(title, description, thumbnail_filename, files):
     """Query Gemini API with optimized news-aware prompt"""
@@ -161,126 +163,135 @@ def query_gemini(title, description, thumbnail_filename, files):
 
     Focus on analyzing all proofs (sources, files, context) meticulously to ensure an accurate score and categorization. Avoid empty or malformed JSON.
     """
-    
-    headers = {'Content-Type': 'application/json'}
-    payload = {
-        'contents': [{
-            'parts': [{'text': prompt}]
-        }]
-    }
-    
+
+    headers = {"Content-Type": "application/json"}
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+
     try:
         response = requests.post(
-            f'{GEMINI_API_URL}?key={GEMINI_API_KEY}',
-            headers=headers,
-            json=payload
+            f"{GEMINI_API_URL}?key={GEMINI_API_KEY}", headers=headers, json=payload
         )
         response.raise_for_status()
-        
+
         gemini_data = response.json()
-        insights = gemini_data.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
-        
+        insights = (
+            gemini_data.get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+        )
+
         # Extract credibility score JSON
-        score_match = re.search(r'### Credibility Score\n```json\n([\s\S]*?)\n```', insights, re.DOTALL)
+        score_match = re.search(
+            r"### Credibility Score\n```json\n([\s\S]*?)\n```", insights, re.DOTALL
+        )
         credibility = {
             "score": 50,
-            "reasoning": ["Default score due to missing or invalid score data"]
+            "reasoning": ["Default score due to missing or invalid score data"],
         }
         if score_match:
             try:
                 score_json = json.loads(score_match.group(1).strip())
-                credibility.update({
-                    "score": score_json.get("score", 50),
-                    "reasoning": score_json.get("reasoning", ["No reasoning provided"])
-                })
+                credibility.update(
+                    {
+                        "score": score_json.get("score", 50),
+                        "reasoning": score_json.get(
+                            "reasoning", ["No reasoning provided"]
+                        ),
+                    }
+                )
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse credibility score JSON: {e}")
-        
+
         # Extract categorization JSON
-        categorization_match = re.search(r'### Categorization\n```json\n([\s\S]*?)\n```', insights, re.DOTALL)
+        categorization_match = re.search(
+            r"### Categorization\n```json\n([\s\S]*?)\n```", insights, re.DOTALL
+        )
         categorization = {
             "category": "Unknown",
             "sub_category": "Unknown",
-            "labels": []
+            "labels": [],
         }
         if categorization_match:
             try:
                 categorization_json = json.loads(categorization_match.group(1).strip())
-                categorization.update({
-                    "category": categorization_json.get("category", "Unknown"),
-                    "sub_category": categorization_json.get("sub_category", "Unknown"),
-                    "labels": categorization_json.get("labels", [])
-                })
+                categorization.update(
+                    {
+                        "category": categorization_json.get("category", "Unknown"),
+                        "sub_category": categorization_json.get(
+                            "sub_category", "Unknown"
+                        ),
+                        "labels": categorization_json.get("labels", []),
+                    }
+                )
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse categorization JSON: {e}")
-        
+
         return insights, categorization, credibility
-    
+
     except Exception as e:
         logger.error(f"Gemini API error: {str(e)}")
         raise Exception(f"Failed to get insights from Gemini API: {str(e)}")
 
-@app.route('/news/insights', methods=['POST'])
+
+@app.route("/news/insights", methods=["POST"])
 def get_news_insights():
     created_files = []
-    
+
     try:
         # Extract form data
-        title = request.form.get('title', '').strip()
-        description = request.form.get('description', '').strip()
+        title = request.form.get("title", "").strip()
+        description = request.form.get("description", "").strip()
 
         # Validate required fields
         if not title or not description:
             return make_response(
-                jsonify({'error': 'Missing required fields: title and description'}),
-                400
+                jsonify(
+                    {
+                        "status": "false",
+                        "error": "Missing required fields: title and description",
+                    }
+                ),
+                400,
             )
-        
+
         # Process thumbnail
         thumbnail_filename = "None"
-        if 'thumbnail' in request.files:
-            thumbnail_file = request.files['thumbnail']
+        if "thumbnail" in request.files:
+            thumbnail_file = request.files["thumbnail"]
             if thumbnail_file.filename:
                 thumbnail_filename = thumbnail_file.filename
                 created_files.append(save_uploaded_file(thumbnail_file))
-        
-        # Process additional files
+
         files = []
-        if 'files' in request.files:
-            file_list = request.files.getlist('files')
+        if "files" in request.files:
+            file_list = request.files.getlist("files")
             for file in file_list:
                 if file and file.filename:
                     files.append(file.filename)
                     created_files.append(save_uploaded_file(file))
-        
-        # Get insights, categorization, and credibility from Gemini
+
         insights, categorization, credibility = query_gemini(title, description, thumbnail_filename, files)
-        
-        # Prepare response
+
+        print(title, description, thumbnail_filename, files)
+
         response_data = {
-            'status': 'success',
-            'insights': insights,
-            'score': credibility['score'],
-            'score_reasoning': credibility['reasoning'],
-            'category': categorization['category'],
-            'sub_category': categorization['sub_category'],
-            'labels': categorization['labels']
+            "status": "success",
+            "insights": insights,
+            "score": credibility["score"],
+            "score_reasoning": credibility["reasoning"],
+            "category": categorization["category"],
+            "sub_category": categorization["sub_category"],
+            "labels": categorization["labels"],
         }
-        
-        return make_response(
-            jsonify(response_data),
-            200
-        )
-        
+
+        return make_response(jsonify(response_data), 200)
+
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
-        return make_response(
-            jsonify({'error': str(e)}),
-            500
-        )
-        
+        return make_response(jsonify({"error": str(e)}), 500)
+
     finally:
-        # Clean up temporary files
         for file_path in created_files:
             try:
                 if file_path and os.path.isfile(file_path):
@@ -288,5 +299,6 @@ def get_news_insights():
             except Exception as e:
                 logger.error(f"Error deleting file {file_path}: {e}")
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)

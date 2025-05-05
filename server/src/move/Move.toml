@@ -1,0 +1,9 @@
+[package]
+name = "NewsStorage"
+version = "1.0.0"
+
+[addresses]
+news_storage = "0xaf1b0010c09fa0b4e40247848fd64605ac2d83a553578f697111f40584a244fc"
+
+[dependencies]
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "main" }
