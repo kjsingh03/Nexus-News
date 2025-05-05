@@ -10,20 +10,17 @@ import json
 
 app = Flask(__name__)
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
-# Directory to store temporary uploaded files
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Current date for comparison
+
 CURRENT_DATE = datetime.now()
 
 
@@ -53,7 +50,7 @@ def extract_date(text, patterns=None):
         if match:
             date_str = match.group()
             try:
-                # Try different date formats
+               
                 for fmt in ["%d %B %Y", "%b %d, %Y", "%Y-%m-%d"]:
                     try:
                         return datetime.strptime(date_str, fmt)
@@ -181,7 +178,6 @@ def query_gemini(title, description, thumbnail_filename, files):
             .get("text", "")
         )
 
-        # Extract credibility score JSON
         score_match = re.search(
             r"### Credibility Score\n```json\n([\s\S]*?)\n```", insights, re.DOTALL
         )
@@ -203,7 +199,7 @@ def query_gemini(title, description, thumbnail_filename, files):
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse credibility score JSON: {e}")
 
-        # Extract categorization JSON
+       
         categorization_match = re.search(
             r"### Categorization\n```json\n([\s\S]*?)\n```", insights, re.DOTALL
         )
@@ -239,11 +235,11 @@ def get_news_insights():
     created_files = []
 
     try:
-        # Extract form data
+    
         title = request.form.get("title", "").strip()
         description = request.form.get("description", "").strip()
 
-        # Validate required fields
+      
         if not title or not description:
             return make_response(
                 jsonify(
@@ -255,7 +251,7 @@ def get_news_insights():
                 400,
             )
 
-        # Process thumbnail
+     
         thumbnail_filename = "None"
         if "thumbnail" in request.files:
             thumbnail_file = request.files["thumbnail"]
